@@ -40,7 +40,7 @@ CLAUDE.md の仕様に基づく実装計画。ブランチ = 機能単位、ス�
 
 ## ブランチ3: タスク管理 `feature/task-management`
 
-- [ ] **3-1. TaskListViewModel(作成・重複チェック・編集・削除ロジック)**
+- [x] **3-1. TaskListViewModel(作成・重複チェック・編集・削除ロジック)**
   - やること: タイトルの前後空白除去・空文字拒否・他タスクとの重複チェック(編集時は自分自身を除外)、作成/タイトル変更/削除を ViewModel に実装
   - 動作確認: ビルドが通る。Preview で ViewModel を使った仮表示を行い、正常作成・空文字・重複(作成時/編集時)・削除の挙動を確認(本格的な確認は 3-2 以降のシミュレータで行う)
   - コミットメッセージ案: `Add TaskListViewModel with duplicate title validation`
