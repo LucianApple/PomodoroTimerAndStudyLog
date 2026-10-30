@@ -84,7 +84,7 @@ CLAUDE.md の仕様に基づく実装計画。ブランチ = 機能単位、ス�
 
 ## ブランチ5: 学習記録 `feature/study-log`
 
-- [ ] **5-1. StudyLogViewModel(合計時間の集計)**
+- [x] **5-1. StudyLogViewModel(合計時間の集計)**
   - やること: 全タスクのトータル学習時間、タスクごとの合計学習時間を集計。表示用の時間フォーマット(例: 1時間25分)も ViewModel/フォーマッタに置く
   - 動作確認: ビルドが通る。Preview にサンプルデータを入れ、記録0件・複数タスク・同一タスク複数記録の合計とフォーマットを確認
   - コミットメッセージ案: `Add StudyLogViewModel for total and per-task study time`
