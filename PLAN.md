@@ -26,7 +26,7 @@ CLAUDE.md の仕様に基づく実装計画。ブランチ = 機能単位、ス�
   - 動作確認: Debug ビルドと Release ビルドの両方がビルドできる
   - コミットメッセージ案: `Add TimerConfig with debug/release durations`
 
-- [ ] **1-2. SwiftData モデル(StudyTask / StudyRecord)と ModelContainer を設定**
+- [x] **1-2. SwiftData モデル(StudyTask / StudyRecord)と ModelContainer を設定**
   - やること: 2つの `@Model` を作成(cascade 削除の関係付き)。App エントリで `modelContainer` を設定。テンプレートの `Item` 等が残っていれば整理
   - 動作確認: ビルドが通り、シミュレータでアプリが起動する。Preview でモデルを使った表示が崩れないことを確認
   - コミットメッセージ案: `Add StudyTask and StudyRecord SwiftData models`
