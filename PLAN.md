@@ -71,7 +71,7 @@ CLAUDE.md の仕様に基づく実装計画。ブランチ = 機能単位、ス�
   - 動作確認: ビルドが通る。DEBUG ビルドのシミュレータ/Preview で、全サイクル完走・学習途中終了・休憩中終了・0秒終了の保存内容をデバッグ出力で確認
   - コミットメッセージ案: `Save accumulated study time as record on timer finish`
 
-- [ ] **4-3. タイマー画面UI(設定・開始)**
+- [x] **4-3. タイマー画面UI(設定・開始)**
   - やること: タスク選択(Picker/Menu)、サイクル数の設定(Stepper)、開始ボタン。タスクが0件のときは「先にタスクを作成してください」の空状態を表示し開始不可。残り時間を大きく表示(`.largeTitle` 等のテキストスタイル、monospacedDigit)、学習/休憩ラベルと現在サイクル表示
   - 動作確認: DEBUG で開始すると 10秒→5秒→10秒…が自動で進む。表示が Dynamic Type に追従。タスク0件で開始できない
   - コミットメッセージ案: `Add timer screen with task picker, cycle setting and countdown`

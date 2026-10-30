@@ -41,6 +41,15 @@ final class TimerViewModel {
     /// 記録の保存に失敗したときのエラーメッセージ(なければ nil)
     private(set) var errorMessage: String?
 
+    /// タイマー画面で選択中のタスク
+    var selectedTask: StudyTask?
+
+    /// タイマー画面で設定するサイクル数
+    var cycleSetting = 1
+
+    /// サイクル数として設定できる範囲
+    let cycleRange = 1...50
+
     private let modelContext: ModelContext
     private let studySeconds: Int
     private let breakSeconds: Int
@@ -76,7 +85,54 @@ final class TimerViewModel {
         self.remainingSeconds = studySeconds
     }
 
+    // MARK: - 画面表示用
+
+    /// 設定(タスク・サイクル数)を変更して開始できる状態か
+    var isConfigurable: Bool {
+        state == .idle || state == .finished
+    }
+
+    /// 開始ボタンを押せるか(タスクが選ばれていて、設定可能な状態のとき)
+    var canStart: Bool {
+        selectedTask != nil && isConfigurable
+    }
+
+    /// 残り時間の表示(分:秒)
+    var timeText: String {
+        String(format: "%02d:%02d", remainingSeconds / 60, remainingSeconds % 60)
+    }
+
+    /// 現在の状態のラベル
+    var phaseLabel: String {
+        switch state {
+        case .idle: "待機"
+        case .studying: "学習中"
+        case .onBreak: "休憩中"
+        case .paused: "一時停止"
+        case .finished: "終了"
+        }
+    }
+
+    /// 現在のサイクルの表示(待機中は nil)
+    var cycleText: String? {
+        currentCycle > 0 ? "サイクル \(currentCycle) / \(totalCycles)" : nil
+    }
+
+    /// タスク一覧に合わせて選択を整える。未選択、または選択中のタスクが消えていたら先頭を選ぶ。
+    func updateSelection(with tasks: [StudyTask]) {
+        if let selectedTask, tasks.contains(where: { $0.id == selectedTask.id }) {
+            return
+        }
+        selectedTask = tasks.first
+    }
+
     // MARK: - 操作
+
+    /// 画面で選んだタスク・サイクル数でタイマーを開始する。
+    func startSelected() {
+        guard canStart, let selectedTask else { return }
+        start(task: selectedTask, totalCycles: cycleSetting)
+    }
 
     /// 指定したタスク・サイクル数でタイマーを開始する。待機中・終了後のみ開始できる。
     func start(task: StudyTask, totalCycles: Int, now: Date = Date()) {
