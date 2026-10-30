@@ -33,7 +33,7 @@ CLAUDE.md の仕様に基づく実装計画。ブランチ = 機能単位、ス�
 
 ## ブランチ2: 画面の骨組み `feature/tab-navigation`
 
-- [ ] **2-1. 3タブの TabView を作成**
+- [x] **2-1. 3タブの TabView を作成**
   - やること: `TabView` にタイマー / タスク / 学習記録の3タブ(SF Symbols、各画面は仮の空 View)。ContentView を TabView に置き換え
   - 動作確認: シミュレータで3タブが切り替わり、アイコンとラベルが表示される。Safe Area が崩れない
   - コミットメッセージ案: `Add tab navigation with timer, tasks and log screens`
