@@ -34,13 +34,21 @@ private struct TimerContent: View {
                         if viewModel.isConfigurable {
                             settingsForm
                         } else {
+                            controlButtons
                             Spacer()
                         }
                     }
                 }
             }
             .navigationTitle("タイマー")
-            .onAppear { viewModel.updateSelection(with: tasks) }
+            .onAppear {
+                viewModel.updateSelection(with: tasks)
+                // タイマー画面を開いている間は画面を自動で消さない
+                UIApplication.shared.isIdleTimerDisabled = true
+            }
+            .onDisappear {
+                UIApplication.shared.isIdleTimerDisabled = false
+            }
             .onChange(of: tasks) { viewModel.updateSelection(with: tasks) }
         }
     }
@@ -67,6 +75,33 @@ private struct TimerContent: View {
         .frame(maxWidth: .infinity)
         .padding(.top)
         .accessibilityElement(children: .combine)
+    }
+
+    /// 一時停止/再生の切り替えボタンと終了ボタン
+    private var controlButtons: some View {
+        HStack(spacing: 16) {
+            Button {
+                viewModel.togglePause()
+            } label: {
+                if viewModel.isPaused {
+                    Label("再開", systemImage: "play.fill")
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                } else {
+                    Label("一時停止", systemImage: "pause.fill")
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                }
+            }
+            .buttonStyle(.borderedProminent)
+
+            Button(role: .destructive) {
+                viewModel.stopAndReset()
+            } label: {
+                Label("終了", systemImage: "stop.fill")
+                    .frame(maxWidth: .infinity, minHeight: 44)
+            }
+            .buttonStyle(.bordered)
+        }
+        .padding()
     }
 
     /// タスク選択・サイクル数・開始ボタン

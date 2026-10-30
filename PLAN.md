@@ -77,7 +77,7 @@ CLAUDE.md の仕様に基づく実装計画。ブランチ = 機能単位、ス�
   - 動作確認: DEBUG で開始すると 10秒→5秒→10秒…が自動で進む。表示が Dynamic Type に追従。タスク0件で開始できない
   - コミットメッセージ案: `Add timer screen with task picker, cycle setting and countdown`
 
-- [ ] **4-4. 一時停止/再生・終了ボタンと画面常時点灯**
+- [x] **4-4. 一時停止/再生・終了ボタンと画面常時点灯**
   - やること: 一時停止と再生が切り替わるボタン、終了ボタン(押すと経過分を記録して待機状態に戻る)。タイマー画面表示中は `isIdleTimerDisabled = true`、離れたら戻す。ボタンは 44×44pt 以上
   - 動作確認: 一時停止で止まり再生で再開する。終了で記録される(学習記録の画面は次ブランチなので、一時的にデバッグ出力か Preview で確認)。タイマー画面を開いている間は自動ロックされない
   - コミットメッセージ案: `Add pause/resume and stop controls with idle timer disabled`

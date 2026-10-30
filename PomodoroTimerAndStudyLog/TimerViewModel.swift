@@ -92,6 +92,11 @@ final class TimerViewModel {
         state == .idle || state == .finished
     }
 
+    /// 一時停止中か(一時停止/再生ボタンの表示の切り替え用)
+    var isPaused: Bool {
+        state == .paused
+    }
+
     /// 開始ボタンを押せるか(タスクが選ばれていて、設定可能な状態のとき)
     var canStart: Bool {
         selectedTask != nil && isConfigurable
@@ -179,6 +184,25 @@ final class TimerViewModel {
         tick(now: now)
         guard state != .idle, state != .finished else { return }
         finish(at: now)
+    }
+
+    /// 一時停止中なら再開し、動作中なら一時停止する(ボタンの切り替え用)。
+    func togglePause() {
+        if state == .paused {
+            resume()
+        } else {
+            pause()
+        }
+    }
+
+    /// 終了ボタン用。経過分を記録して終了し、待機状態に戻す。
+    func stopAndReset() {
+        stop()
+        guard state == .finished else { return }
+        state = .idle
+        remainingSeconds = studySeconds
+        currentCycle = 0
+        totalCycles = 0
     }
 
     // MARK: - 時間の進行
