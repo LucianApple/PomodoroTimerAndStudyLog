@@ -31,12 +31,50 @@ private struct TaskListContent: View {
                 if tasks.isEmpty {
                     ContentUnavailableView("タスクがまだありません", systemImage: "folder")
                 } else {
-                    List(tasks) { task in
-                        Label(task.title, systemImage: "folder")
+                    List {
+                        ForEach(tasks) { task in
+                            TaskRow(task: task) {
+                                viewModel.startRenaming(task)
+                            }
+                        }
+                        .onDelete { offsets in
+                            // 削除は確認ダイアログを経由する
+                            if let index = offsets.first {
+                                viewModel.requestDeletion(of: tasks[index])
+                            }
+                        }
                     }
                 }
             }
             .navigationTitle("タスク")
+            .toolbar {
+                if !tasks.isEmpty {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        EditButton()
+                    }
+                }
+            }
+            .sheet(item: $viewModel.renamingTask) { _ in
+                TaskRenameSheet(viewModel: viewModel)
+            }
+            .confirmationDialog(
+                "タスクを削除しますか?",
+                isPresented: Binding(
+                    get: { viewModel.taskPendingDeletion != nil },
+                    set: { isPresented in
+                        if !isPresented { viewModel.taskPendingDeletion = nil }
+                    }
+                ),
+                titleVisibility: .visible,
+                presenting: viewModel.taskPendingDeletion
+            ) { task in
+                Button("削除", role: .destructive) {
+                    viewModel.confirmDeletion(of: task)
+                }
+                Button("キャンセル", role: .cancel) {}
+            } message: { task in
+                Text("「\(task.title)」を削除すると、このタスクの学習記録も一緒に消えます。")
+            }
         }
     }
 
@@ -63,6 +101,65 @@ private struct TaskListContent: View {
             }
         }
         .padding()
+    }
+}
+
+/// タスクの1行。編集モード中だけタップでタイトル変更を開始できる。
+private struct TaskRow: View {
+    @Environment(\.editMode) private var editMode
+    let task: StudyTask
+    let onRename: () -> Void
+
+    private var isEditing: Bool {
+        editMode?.wrappedValue.isEditing == true
+    }
+
+    var body: some View {
+        if isEditing {
+            Button(action: onRename) {
+                Label(task.title, systemImage: "folder")
+                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .foregroundStyle(.primary)
+        } else {
+            Label(task.title, systemImage: "folder")
+                .frame(minHeight: 44)
+        }
+    }
+}
+
+/// タスクのタイトル変更画面
+private struct TaskRenameSheet: View {
+    @Bindable var viewModel: TaskListViewModel
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("タスク名", text: $viewModel.renameTitle)
+                        .frame(minHeight: 44)
+                        .submitLabel(.done)
+                        .onSubmit { viewModel.saveRename() }
+                } footer: {
+                    if let message = viewModel.renameErrorMessage {
+                        Text(message)
+                            .foregroundStyle(.red)
+                    }
+                }
+            }
+            .navigationTitle("タスク名を変更")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("キャンセル") { viewModel.cancelRenaming() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("保存") { viewModel.saveRename() }
+                }
+            }
+        }
+        .presentationDetents([.medium])
     }
 }
 

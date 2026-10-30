@@ -31,8 +31,60 @@ final class TaskListViewModel {
     /// 画面に表示するエラーメッセージ(なければ nil)
     var errorMessage: String?
 
+    /// タイトル変更中のタスク(nil なら変更画面は閉じている)
+    var renamingTask: StudyTask?
+
+    /// タイトル変更画面の入力欄の文字列。編集を始めたら前回のエラー表示は消す。
+    var renameTitle = "" {
+        didSet { renameErrorMessage = nil }
+    }
+
+    /// タイトル変更画面に表示するエラーメッセージ(なければ nil)
+    var renameErrorMessage: String?
+
+    /// 削除の確認待ちのタスク(nil なら確認ダイアログは閉じている)
+    var taskPendingDeletion: StudyTask?
+
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
+    }
+
+    /// タイトル変更を開始する。入力欄には現在のタイトルを入れる。
+    func startRenaming(_ task: StudyTask) {
+        renameTitle = task.title
+        renameErrorMessage = nil
+        renamingTask = task
+    }
+
+    /// 入力欄の内容でタイトルを変更する。成功したら変更画面を閉じ、失敗したらエラーメッセージを設定する。
+    func saveRename() {
+        guard let task = renamingTask else { return }
+        do {
+            try updateTitle(of: task, to: renameTitle)
+            renamingTask = nil
+        } catch {
+            renameErrorMessage = error.localizedDescription
+        }
+    }
+
+    /// タイトル変更を取りやめる。
+    func cancelRenaming() {
+        renamingTask = nil
+    }
+
+    /// 削除の確認ダイアログを出すために、削除対象を記録する。
+    func requestDeletion(of task: StudyTask) {
+        taskPendingDeletion = task
+    }
+
+    /// 確認ダイアログで承認されたタスクを削除する。
+    func confirmDeletion(of task: StudyTask) {
+        do {
+            try deleteTask(task)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        taskPendingDeletion = nil
     }
 
     /// 入力欄の内容でタスクを追加する。成功したら入力欄を空にし、失敗したらエラーメッセージを設定する。
