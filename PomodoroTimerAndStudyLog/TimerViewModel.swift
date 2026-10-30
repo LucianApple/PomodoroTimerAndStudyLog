@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import SwiftData
 import SwiftUI
 
 /// タイマーの状態
@@ -19,6 +20,7 @@ enum TimerPhase: Equatable {
 
 /// 学習→休憩→学習…を全自動で進めるポモドーロタイマーの状態遷移を管理する。
 /// 最終サイクルは学習が終わった時点で即終了する(最後の休憩はなし)。
+/// 学習中の経過時間だけを溜め、終了時に選択タスクへ StudyRecord を1件にまとめて保存する。
 @MainActor
 @Observable
 final class TimerViewModel {
@@ -36,8 +38,15 @@ final class TimerViewModel {
     /// 一時停止した区間(一時停止中以外は nil)
     private(set) var pausedPhase: TimerPhase?
 
+    /// 記録の保存に失敗したときのエラーメッセージ(なければ nil)
+    private(set) var errorMessage: String?
+
+    private let modelContext: ModelContext
     private let studySeconds: Int
     private let breakSeconds: Int
+
+    /// 記録の保存先のタスク(開始時に選ばれたもの)
+    private var task: StudyTask?
 
     /// 現在の区間(待機・終了時は nil。一時停止中は止まる直前の区間)
     private var phase: TimerPhase?
@@ -48,9 +57,20 @@ final class TimerViewModel {
     /// 一時停止した時点の残り時間(再開時に終了予定時刻を計算し直すために保存)
     private var pausedRemaining: TimeInterval = 0
 
+    /// 学習の連続した経過の開始時刻(学習中以外は nil)
+    private var studyStartDate: Date?
+
+    /// 完了した学習の経過時間の合計(保存したら0に戻す)
+    private var accumulatedStudy: TimeInterval = 0
+
     private var tickTask: Task<Void, Never>?
 
-    init(studySeconds: Int = TimerConfig.studySeconds, breakSeconds: Int = TimerConfig.breakSeconds) {
+    init(
+        modelContext: ModelContext,
+        studySeconds: Int = TimerConfig.studySeconds,
+        breakSeconds: Int = TimerConfig.breakSeconds
+    ) {
+        self.modelContext = modelContext
         self.studySeconds = studySeconds
         self.breakSeconds = breakSeconds
         self.remainingSeconds = studySeconds
@@ -58,18 +78,23 @@ final class TimerViewModel {
 
     // MARK: - 操作
 
-    /// 指定したサイクル数でタイマーを開始する。待機中・終了後のみ開始できる。
-    func start(totalCycles: Int, now: Date = Date()) {
+    /// 指定したタスク・サイクル数でタイマーを開始する。待機中・終了後のみ開始できる。
+    func start(task: StudyTask, totalCycles: Int, now: Date = Date()) {
         guard state == .idle || state == .finished, totalCycles >= 1 else { return }
+        self.task = task
         self.totalCycles = totalCycles
         currentCycle = 1
-        beginPhase(.study, endingAt: now.addingTimeInterval(TimeInterval(studySeconds)))
+        accumulatedStudy = 0
+        errorMessage = nil
+        beginPhase(.study, from: now, endingAt: now.addingTimeInterval(TimeInterval(studySeconds)))
         startTicking()
     }
 
-    /// 一時停止する。残り時間を保存し、停止中は進めない。
+    /// 一時停止する。残り時間を保存し、停止中は進めない。ここまでの学習時間は溜めるだけで、保存はしない。
     func pause(now: Date = Date()) {
+        tick(now: now)
         guard state == .studying || state == .onBreak, let phase, let phaseEndDate else { return }
+        accumulateStudy(until: now)
         pausedRemaining = max(0, phaseEndDate.timeIntervalSince(now))
         pausedPhase = phase
         self.phaseEndDate = nil
@@ -82,14 +107,15 @@ final class TimerViewModel {
     func resume(now: Date = Date()) {
         guard state == .paused, let phase = pausedPhase else { return }
         pausedPhase = nil
-        beginPhase(phase, endingAt: now.addingTimeInterval(pausedRemaining))
+        beginPhase(phase, from: now, endingAt: now.addingTimeInterval(pausedRemaining))
         startTicking()
     }
 
-    /// 手動で終了する。終了済み・待機中は何もしない。
-    func stop() {
+    /// 手動で終了し、溜めた学習時間を記録する。終了済み・待機中は何もしない(二重保存の防止)。
+    func stop(now: Date = Date()) {
+        tick(now: now)
         guard state != .idle, state != .finished else { return }
-        finish()
+        finish(at: now)
     }
 
     // MARK: - 時間の進行
@@ -102,13 +128,14 @@ final class TimerViewModel {
             switch phase {
             case .study:
                 if currentCycle >= totalCycles {
-                    finish()
+                    finish(at: end)
                     return
                 }
-                beginPhase(.rest, endingAt: end.addingTimeInterval(TimeInterval(breakSeconds)))
+                accumulateStudy(until: end)
+                beginPhase(.rest, from: end, endingAt: end.addingTimeInterval(TimeInterval(breakSeconds)))
             case .rest:
                 currentCycle += 1
-                beginPhase(.study, endingAt: end.addingTimeInterval(TimeInterval(studySeconds)))
+                beginPhase(.study, from: end, endingAt: end.addingTimeInterval(TimeInterval(studySeconds)))
             }
         }
         if let end = phaseEndDate {
@@ -118,21 +145,62 @@ final class TimerViewModel {
 
     // MARK: - 内部処理
 
-    private func beginPhase(_ newPhase: TimerPhase, endingAt end: Date) {
+    private func beginPhase(_ newPhase: TimerPhase, from start: Date, endingAt end: Date) {
         phase = newPhase
         phaseEndDate = end
+        studyStartDate = newPhase == .study ? start : nil
         state = newPhase == .study ? .studying : .onBreak
         remainingSeconds = max(0, Int(ceil(end.timeIntervalSinceNow)))
     }
 
-    private func finish() {
+    /// 学習の経過(開始時刻から指定時刻まで)を溜める。区間の終了予定時刻を超えた分は数えない。
+    private func accumulateStudy(until date: Date) {
+        guard let start = studyStartDate else { return }
+        let end = min(date, phaseEndDate ?? date)
+        accumulatedStudy += max(0, end.timeIntervalSince(start))
+        studyStartDate = nil
+    }
+
+    /// 終了処理。1回だけ実行され、終了済みなら何もしない。
+    private func finish(at date: Date) {
+        guard state != .finished else { return }
+        if state == .studying {
+            accumulateStudy(until: date)
+        }
         tickTask?.cancel()
         tickTask = nil
         phase = nil
         phaseEndDate = nil
+        studyStartDate = nil
         pausedPhase = nil
         remainingSeconds = 0
         state = .finished
+        saveRecord()
+    }
+
+    /// 溜めた学習時間を StudyRecord 1件として保存する。0秒なら保存しない。保存後は溜めた秒数を0に戻す。
+    private func saveRecord() {
+        // Date の差には 1e-7 秒程度の誤差があるので、切り捨て前に少しだけ足す(10秒ちょうどが9秒になるのを防ぐ)
+        let seconds = Int((accumulatedStudy + 0.001).rounded(.down))
+        accumulatedStudy = 0
+        guard seconds > 0, let task else {
+            debugLog("保存なし(学習 0秒)")
+            return
+        }
+        modelContext.insert(StudyRecord(studySeconds: seconds, task: task))
+        do {
+            try modelContext.save()
+            debugLog("保存: \(task.title) \(seconds)秒")
+        } catch {
+            errorMessage = error.localizedDescription
+            debugLog("保存失敗: \(error.localizedDescription)")
+        }
+    }
+
+    private func debugLog(_ message: String) {
+        #if DEBUG
+        print("[Timer] \(message)")
+        #endif
     }
 
     /// 1秒ごとに tick を呼ぶループ(async/await)。
@@ -148,37 +216,50 @@ final class TimerViewModel {
     }
 }
 
-// MARK: - Preview(4-1 の動作確認用の仮表示。画面本体は 4-3 以降で実装する)
+// MARK: - Preview(4-2 の動作確認用の仮表示。画面本体は 4-3 以降で実装する)
 
 private struct TimerViewModelPreview: View {
-    @State private var viewModel = TimerViewModel()
+    @Environment(\.modelContext) private var modelContext
+    @Query(sort: \StudyRecord.recordedAt) private var records: [StudyRecord]
+    @State private var viewModel: TimerViewModel?
+    @State private var task: StudyTask?
     @State private var totalCycles = 2
 
     var body: some View {
         VStack(spacing: 16) {
-            Text("状態: \(String(describing: viewModel.state))")
-            if let pausedPhase = viewModel.pausedPhase {
-                Text("停止した区間: \(String(describing: pausedPhase))")
-            }
-            Text("サイクル: \(viewModel.currentCycle) / \(viewModel.totalCycles)")
-            Text("残り: \(viewModel.remainingSeconds) 秒")
-                .font(.largeTitle)
-                .monospacedDigit()
+            if let viewModel, let task {
+                Text("状態: \(String(describing: viewModel.state))")
+                Text("サイクル: \(viewModel.currentCycle) / \(viewModel.totalCycles)")
+                Text("残り: \(viewModel.remainingSeconds) 秒")
+                    .font(.largeTitle)
+                    .monospacedDigit()
 
-            Stepper("サイクル数: \(totalCycles)", value: $totalCycles, in: 1...5)
+                Stepper("サイクル数: \(totalCycles)", value: $totalCycles, in: 1...5)
 
-            HStack {
-                Button("開始") { viewModel.start(totalCycles: totalCycles) }
-                Button("一時停止") { viewModel.pause() }
-                Button("再開") { viewModel.resume() }
-                Button("終了") { viewModel.stop() }
+                HStack {
+                    Button("開始") { viewModel.start(task: task, totalCycles: totalCycles) }
+                    Button("一時停止") { viewModel.pause() }
+                    Button("再開") { viewModel.resume() }
+                    Button("終了") { viewModel.stop() }
+                }
+                .buttonStyle(.bordered)
+
+                List(records) { record in
+                    Text("記録: \(record.task?.title ?? "-") \(record.studySeconds)秒")
+                }
             }
-            .buttonStyle(.bordered)
         }
         .padding()
+        .task {
+            let task = StudyTask(title: "数学1A")
+            modelContext.insert(task)
+            self.task = task
+            viewModel = TimerViewModel(modelContext: modelContext)
+        }
     }
 }
 
 #Preview {
     TimerViewModelPreview()
+        .modelContainer(for: [StudyTask.self, StudyRecord.self], inMemory: true)
 }
