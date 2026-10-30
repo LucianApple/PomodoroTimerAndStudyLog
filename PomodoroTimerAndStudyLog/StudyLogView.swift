@@ -34,6 +34,7 @@ private struct StudyLogContent: View {
                                     .monospacedDigit()
                             }
                             .frame(minHeight: 44)
+                            .cardRowBackground()
                         }
 
                         Section("タスクごと") {
@@ -45,6 +46,7 @@ private struct StudyLogContent: View {
                                     Label(summary.title, systemImage: "folder")
                                 }
                                 .frame(minHeight: 44)
+                                .cardRowBackground()
                             }
                         }
                     }
