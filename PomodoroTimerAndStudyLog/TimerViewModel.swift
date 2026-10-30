@@ -102,6 +102,13 @@ final class TimerViewModel {
         String(format: "%02d:%02d", remainingSeconds / 60, remainingSeconds % 60)
     }
 
+    /// 学習時間の目安の表示(学習時間 × サイクル数。休憩は含めない)
+    var studyEstimateText: String {
+        let single = DurationFormatter.string(fromSeconds: studySeconds)
+        let total = DurationFormatter.string(fromSeconds: studySeconds * cycleSetting)
+        return "学習時間の目安: \(single) × \(cycleSetting)回 = \(total)"
+    }
+
     /// 現在の状態のラベル
     var phaseLabel: String {
         switch state {

@@ -73,6 +73,7 @@ CLAUDE.md の仕様に基づく実装計画。ブランチ = 機能単位、ス�
 
 - [x] **4-3. タイマー画面UI(設定・開始)**
   - やること: タスク選択(Picker/Menu)、サイクル数の設定(Stepper)、開始ボタン。タスクが0件のときは「先にタスクを作成してください」の空状態を表示し開始不可。残り時間を大きく表示(`.largeTitle` 等のテキストスタイル、monospacedDigit)、学習/休憩ラベルと現在サイクル表示
+  - 追加: 設定部分に学習時間の目安(学習時間 × サイクル数、休憩は含めない)を表示。時間の文字列化は共通の `DurationFormatter` に置く
   - 動作確認: DEBUG で開始すると 10秒→5秒→10秒…が自動で進む。表示が Dynamic Type に追従。タスク0件で開始できない
   - コミットメッセージ案: `Add timer screen with task picker, cycle setting and countdown`
 

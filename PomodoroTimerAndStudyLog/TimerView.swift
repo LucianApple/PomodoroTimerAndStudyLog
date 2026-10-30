@@ -87,6 +87,9 @@ private struct TimerContent: View {
                     in: viewModel.cycleRange
                 )
                 .frame(minHeight: 44)
+
+                Text(viewModel.studyEstimateText)
+                    .font(.body)
             }
 
             Section {
