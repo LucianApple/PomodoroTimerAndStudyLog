@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 @main
 struct PomodoroTimerAndStudyLogApp: App {
@@ -13,5 +14,6 @@ struct PomodoroTimerAndStudyLogApp: App {
         WindowGroup {
             ContentView()
         }
+        .modelContainer(for: [StudyTask.self, StudyRecord.self])
     }
 }
