@@ -23,8 +23,26 @@ enum TaskTitleError: LocalizedError {
 final class TaskListViewModel {
     private let modelContext: ModelContext
 
+    /// 新規タスクの入力欄の文字列。編集を始めたら前回のエラー表示は消す。
+    var newTitle = "" {
+        didSet { errorMessage = nil }
+    }
+
+    /// 画面に表示するエラーメッセージ(なければ nil)
+    var errorMessage: String?
+
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
+    }
+
+    /// 入力欄の内容でタスクを追加する。成功したら入力欄を空にし、失敗したらエラーメッセージを設定する。
+    func addTask() {
+        do {
+            try createTask(title: newTitle)
+            newTitle = ""
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
     /// タスクを作成する。タイトルは前後の空白を除去し、空文字と重複は拒否する。

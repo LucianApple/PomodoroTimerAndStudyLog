@@ -45,7 +45,7 @@ CLAUDE.md の仕様に基づく実装計画。ブランチ = 機能単位、ス�
   - 動作確認: ビルドが通る。Preview で ViewModel を使った仮表示を行い、正常作成・空文字・重複(作成時/編集時)・削除の挙動を確認(本格的な確認は 3-2 以降のシミュレータで行う)
   - コミットメッセージ案: `Add TaskListViewModel with duplicate title validation`
 
-- [ ] **3-2. タスク一覧画面(表示・空の状態・作成)**
+- [x] **3-2. タスク一覧画面(表示・空の状態・作成)**
   - やること: `@Query` で一覧表示、各行の左にフォルダアイコン(`folder`)、0件時は「タスクがまだありません」の空状態(`ContentUnavailableView`)、タイトル入力による作成 UI、重複・空文字時のエラー表示
   - 動作確認: 追加でき、アプリ再起動後も残る。0件で空状態が出る。重複名でエラーが出て追加されない
   - コミットメッセージ案: `Add task list screen with create and empty state`
