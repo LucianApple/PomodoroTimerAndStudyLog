@@ -36,6 +36,7 @@ private struct TaskListContent: View {
                             TaskRow(task: task) {
                                 viewModel.startRenaming(task)
                             }
+                            .cardRowBackground()
                         }
                         .onDelete { offsets in
                             // 削除は確認ダイアログを経由する
@@ -83,6 +84,7 @@ private struct TaskListContent: View {
             HStack {
                 TextField("タスク名", text: $viewModel.newTitle)
                     .textFieldStyle(.roundedBorder)
+                    .fieldBorder()
                     .frame(minHeight: 44)
                     .submitLabel(.done)
                     .onSubmit { viewModel.addTask() }
@@ -141,6 +143,7 @@ private struct TaskRenameSheet: View {
                         .frame(minHeight: 44)
                         .submitLabel(.done)
                         .onSubmit { viewModel.saveRename() }
+                        .cardRowBackground()
                 } footer: {
                     if let message = viewModel.renameErrorMessage {
                         Text(message)

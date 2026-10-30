@@ -29,13 +29,13 @@ private struct TimerContent: View {
                 if tasks.isEmpty {
                     ContentUnavailableView("先にタスクを作成してください", systemImage: "folder")
                 } else {
-                    VStack(spacing: 0) {
-                        countdownSection
-                        if viewModel.isConfigurable {
-                            settingsForm
-                        } else {
+                    if viewModel.isConfigurable {
+                        // 最大サイズの Dynamic Type でも、全体をスクロールして開始ボタンまで届くようにする
+                        settingsForm
+                    } else {
+                        ScrollView {
+                            countdownSection
                             controlButtons
-                            Spacer()
                         }
                     }
                 }
@@ -61,10 +61,14 @@ private struct TimerContent: View {
                 .monospacedDigit()
                 .minimumScaleFactor(0.5)
                 .lineLimit(1)
-                .padding(.vertical, 24)
+                .padding(.top, 24)
+                // ラベルがない待機中は、下の余白を詰めて残り時間の下が不自然に空かないようにする
+                .padding(.bottom, viewModel.phaseLabel == nil ? 0 : 24)
 
-            Text(viewModel.phaseLabel)
-                .font(.title2)
+            if let phaseLabel = viewModel.phaseLabel {
+                Text(phaseLabel)
+                    .font(.title2)
+            }
 
             if let cycleText = viewModel.cycleText {
                 Text(cycleText)
@@ -108,6 +112,12 @@ private struct TimerContent: View {
     private var settingsForm: some View {
         Form {
             Section {
+                countdownSection
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+            }
+
+            Section {
                 Picker("タスク", selection: $viewModel.selectedTask) {
                     ForEach(tasks) { task in
                         Label(task.title, systemImage: "folder")
@@ -115,6 +125,7 @@ private struct TimerContent: View {
                     }
                 }
                 .frame(minHeight: 44)
+                .cardRowBackground()
 
                 Stepper(
                     "サイクル数: \(viewModel.cycleSetting)",
@@ -122,17 +133,23 @@ private struct TimerContent: View {
                     in: viewModel.cycleRange
                 )
                 .frame(minHeight: 44)
+                .cardRowBackground()
 
                 Text(viewModel.studyEstimateText)
                     .font(.body)
+                    .cardRowBackground()
             }
 
             Section {
                 Button {
                     viewModel.startSelected()
                 } label: {
-                    Label("開始", systemImage: "play.fill")
-                        .frame(maxWidth: .infinity, minHeight: 44)
+                    // Form 内の Label はアイコン列の分だけ文字がずれるため、HStack で中央に揃える
+                    HStack(spacing: 8) {
+                        Image(systemName: "play.fill")
+                        Text("開始")
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 44)
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(!viewModel.canStart)

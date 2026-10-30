@@ -114,10 +114,10 @@ final class TimerViewModel {
         return "学習時間の目安: \(single) × \(cycleSetting)回 = \(total)"
     }
 
-    /// 現在の状態のラベル
-    var phaseLabel: String {
+    /// 現在の状態のラベル(待機中は表示しないので nil)
+    var phaseLabel: String? {
         switch state {
-        case .idle: "待機"
+        case .idle: nil
         case .studying: "学習中"
         case .onBreak: "休憩中"
         case .paused: "一時停止"
