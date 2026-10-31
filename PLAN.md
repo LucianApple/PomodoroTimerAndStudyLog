@@ -115,7 +115,7 @@ CLAUDE.md の仕様に基づく実装計画。ブランチ = 機能単位、ス�
 
 ## ブランチ7: 階層のデータモデル `feature/hierarchy-model`
 
-- [ ] **7-1. StudyTask に parent / children と計算プロパティを追加**
+- [x] **7-1. StudyTask に parent / children と計算プロパティを追加**
   - やること: `StudyTask` に `parent: StudyTask?`(初期値 nil)と `children: [StudyTask]`(`@Relationship(deleteRule: .cascade, inverse: \StudyTask.parent)`)を追加。計算プロパティで、深さ `level`(第1階層 = 1、parent をたどって求める)、子を持つかの判定 `hasChildren`、合計学習時間 `totalStudySeconds`(子の `totalStudySeconds` の和 + 自身の records の合計。自身に記録がなければ 0 加算)を提供する。`@Attribute(.unique)` は使わない
   - 動作確認: ビルドが通り、既存データがあるシミュレータでも起動してクラッシュしない(既存タスクは parent = nil で残る)。Preview にサンプルデータ(3階層、途中のタスクに過去の記録あり)を入れ、level・hasChildren・合計(自身の記録を含む)が想定どおりであること、親を削除すると子と記録も消えることを確認
   - コミットメッセージ案: `Add parent/children hierarchy to StudyTask with computed totals`
