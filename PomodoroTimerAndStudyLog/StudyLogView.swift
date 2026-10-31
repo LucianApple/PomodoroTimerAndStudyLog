@@ -39,14 +39,7 @@ private struct StudyLogContent: View {
 
                         Section("タスクごと") {
                             ForEach(viewModel.taskSummaries) { summary in
-                                LabeledContent {
-                                    Text(summary.formattedTotal)
-                                        .monospacedDigit()
-                                } label: {
-                                    Label(summary.title, systemImage: "folder")
-                                }
-                                .frame(minHeight: 44)
-                                .cardRowBackground()
+                                TaskSummaryRow(summary: summary)
                             }
                         }
                     }
@@ -61,19 +54,40 @@ private struct StudyLogContent: View {
     }
 }
 
+/// タスクごとの合計の1行。階層に応じてインデントする(Dynamic Type に合わせて幅も拡大)。
+private struct TaskSummaryRow: View {
+    let summary: TaskStudySummary
+    @ScaledMetric private var indentStep = 16.0
+
+    var body: some View {
+        LabeledContent {
+            Text(summary.formattedTotal)
+                .monospacedDigit()
+        } label: {
+            Label(summary.title, systemImage: "folder")
+        }
+        .padding(.leading, CGFloat(summary.level - 1) * indentStep)
+        .frame(minHeight: 44)
+        .cardRowBackground()
+    }
+}
+
 #Preview("記録あり") {
     let container = try! ModelContainer(
         for: StudyTask.self, StudyRecord.self,
         configurations: ModelConfiguration(isStoredInMemoryOnly: true)
     )
     let context = container.mainContext
-    let math = StudyTask(title: "数学1A", createdAt: .now)
-    let english = StudyTask(title: "英単語帳", createdAt: .now.addingTimeInterval(1))
-    context.insert(math)
-    context.insert(english)
-    context.insert(StudyRecord(studySeconds: 1500, task: math))
-    context.insert(StudyRecord(studySeconds: 1500, task: math))
-    context.insert(StudyRecord(studySeconds: 45, task: english))
+    // 数学(第1) › 数学1A(第2、過去の記録 300秒) › ベクトル(第3、600秒)、英語(第1、120秒)
+    let math = StudyTask(title: "数学", createdAt: .now)
+    let math1A = StudyTask(title: "数学1A", createdAt: .now.addingTimeInterval(1), parent: math)
+    let vectors = StudyTask(title: "三角比", createdAt: .now.addingTimeInterval(2), parent: math1A)
+    let english = StudyTask(title: "英語", createdAt: .now.addingTimeInterval(3))
+    [math, math1A, vectors, english].forEach { context.insert($0) }
+    context.insert(StudyRecord(studySeconds: 600, task: vectors))
+    context.insert(StudyRecord(studySeconds: 300, task: math1A))
+    context.insert(StudyRecord(studySeconds: 120, task: english))
+    // 期待値: 全体 1020秒(17分) / 数学 900 / 数学1A 900 / ベクトル 600 / 英語 120
     return StudyLogView().modelContainer(container)
 }
 
