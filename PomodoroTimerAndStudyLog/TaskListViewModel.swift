@@ -7,6 +7,7 @@ import SwiftUI
 enum TaskTitleError: LocalizedError {
     case empty
     case duplicate
+    case maxDepthExceeded
 
     var errorDescription: String? {
         switch self {
@@ -14,6 +15,8 @@ enum TaskTitleError: LocalizedError {
             return "タスク名を入力してください"
         case .duplicate:
             return "同じ名前のタスクがすでにあります"
+        case .maxDepthExceeded:
+            return "これ以上、下の階層にタスクは追加できません"
         }
     }
 }
@@ -21,6 +24,9 @@ enum TaskTitleError: LocalizedError {
 /// タスクの作成・タイトル変更・削除と、タイトルの検証(空文字・重複)を行う。
 @Observable
 final class TaskListViewModel {
+    /// タスクの最大階層数
+    static let maxLevel = 3
+
     private let modelContext: ModelContext
 
     /// 新規タスクの入力欄の文字列。編集を始めたら前回のエラー表示は消す。
@@ -88,20 +94,33 @@ final class TaskListViewModel {
     }
 
     /// 入力欄の内容でタスクを追加する。成功したら入力欄を空にし、失敗したらエラーメッセージを設定する。
-    func addTask() {
+    /// - Parameter parent: 追加先の親タスク(nil なら第1階層)
+    func addTask(parent: StudyTask? = nil) {
         do {
-            try createTask(title: newTitle)
+            try createTask(title: newTitle, parent: parent)
             newTitle = ""
         } catch {
             errorMessage = error.localizedDescription
         }
     }
 
-    /// タスクを作成する。タイトルは前後の空白を除去し、空文字と重複は拒否する。
+    /// 指定したタスクの下に子タスクを追加できるか。親が nil(第1階層に追加)なら常に可能で、
+    /// 第3階層のタスクには追加できない。
+    func canAddChild(to parent: StudyTask?) -> Bool {
+        guard let parent else { return true }
+        return parent.level < Self.maxLevel
+    }
+
+    /// タスクを作成する。タイトルは前後の空白を除去し、空文字と重複(全階層が対象)は拒否する。
+    /// 第3階層のタスクを親にした作成も拒否する。
+    /// - Parameter parent: 親タスク(nil なら第1階層)
     @discardableResult
-    func createTask(title: String) throws -> StudyTask {
+    func createTask(title: String, parent: StudyTask? = nil) throws -> StudyTask {
+        guard canAddChild(to: parent) else {
+            throw TaskTitleError.maxDepthExceeded
+        }
         let validTitle = try validatedTitle(title, excluding: nil)
-        let task = StudyTask(title: validTitle)
+        let task = StudyTask(title: validTitle, parent: parent)
         modelContext.insert(task)
         try modelContext.save()
         return task
@@ -182,6 +201,37 @@ private struct TaskListViewModelPreview: View {
             attempt("編集 数学1A → 数学1A(自分自身は重複扱いにしない)") { try viewModel.updateTitle(of: math, to: "数学1A") }
             attempt("編集 英単語帳 → 英熟語") { try viewModel.updateTitle(of: english, to: "英熟語") }
             attempt("削除 英熟語") { try viewModel.deleteTask(english) }
+
+            // 8-1: 階層対応の確認
+            var algebra: StudyTask?
+            attempt("第2階層「代数」を数学1A の下に作成") {
+                algebra = try viewModel.createTask(title: "代数", parent: math)
+            }
+            if let algebra {
+                var equation: StudyTask?
+                attempt("第3階層「方程式」を代数の下に作成") {
+                    equation = try viewModel.createTask(title: "方程式", parent: algebra)
+                }
+                if let equation {
+                    log.append("level: 数学1A=\(math.level) 代数=\(algebra.level) 方程式=\(equation.level)")
+                    log.append("canAddChild: 第3階層=\(viewModel.canAddChild(to: equation)) 第2階層=\(viewModel.canAddChild(to: algebra))")
+                    attempt("第3階層「方程式」の下に作成(拒否される)") {
+                        try viewModel.createTask(title: "一次方程式", parent: equation)
+                    }
+                    attempt("別階層との重複「数学1A」を第2階層に作成(拒否される)") {
+                        try viewModel.createTask(title: "数学1A", parent: algebra)
+                    }
+                    attempt("別階層との重複「方程式」を第1階層に作成(拒否される)") {
+                        try viewModel.createTask(title: "方程式")
+                    }
+                    attempt("編集 方程式 → 方程式(自分自身は重複扱いにしない)") {
+                        try viewModel.updateTitle(of: equation, to: "方程式")
+                    }
+                    attempt("編集 方程式 → 数学1A(別階層と重複)") {
+                        try viewModel.updateTitle(of: equation, to: "数学1A")
+                    }
+                }
+            }
         }
     }
 }
