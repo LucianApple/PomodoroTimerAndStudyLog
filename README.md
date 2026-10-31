@@ -101,14 +101,17 @@ StudyRecord：タスクに紐づく学習時間を管理
 
 ## 動作確認の方法
 
-GitHubからリポジトリをクローン
+```
+# GitHubからリポジトリをクローン
 git clone https://github.com/LucianApple/PomodoroTimerAndStudyLog.git
 
-プロジェクトディレクトリに移動
+# プロジェクトディレクトリに移動
 cd PomodoroTimerAndStudyLog
 
-Xcodeでプロジェクトを開く
+# Xcodeでプロジェクトを開く
 open PomodoroTimerAndStudyLog.xcodeproj
+```
+
 
 1. iPhone シミュレータを選んで、実行します(⌘R)。
 2. **Xcode から、そのまま実行した場合(Debug ビルド)は、動作確認用に、学習10秒・休憩5秒で動きます。**
