@@ -26,7 +26,7 @@ private struct TimerContent: View {
     var body: some View {
         NavigationStack {
             Group {
-                if tasks.isEmpty {
+                if selectableTasks.isEmpty {
                     ContentUnavailableView("先にタスクを作成してください", systemImage: "folder")
                 } else {
                     if viewModel.isConfigurable {
@@ -51,6 +51,11 @@ private struct TimerContent: View {
             }
             .onChange(of: tasks) { viewModel.updateSelection(with: tasks) }
         }
+    }
+
+    /// 子を持たないタスクだけの候補
+    private var selectableTasks: [StudyTask] {
+        viewModel.selectableTasks(from: tasks)
     }
 
     /// 残り時間・状態ラベル・サイクル表示
@@ -119,8 +124,11 @@ private struct TimerContent: View {
 
             Section {
                 Picker("タスク", selection: $viewModel.selectedTask) {
-                    ForEach(tasks) { task in
-                        Label(task.title, systemImage: "folder")
+                    // 未選択(選択中のタスクが候補から外れた場合)
+                    Text("選択してください")
+                        .tag(StudyTask?.none)
+                    ForEach(selectableTasks) { task in
+                        Label(viewModel.displayName(of: task), systemImage: "folder")
                             .tag(Optional(task))
                     }
                 }

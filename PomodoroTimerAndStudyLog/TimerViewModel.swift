@@ -50,6 +50,9 @@ final class TimerViewModel {
     /// サイクル数として設定できる範囲
     let cycleRange = 1...50
 
+    /// 一度でもタスクが選ばれたか(自動選択を最初の1回だけにするため。解除後に先頭を選び直さない)
+    private var hasHadSelection = false
+
     private let modelContext: ModelContext
     private let studySeconds: Int
     private let breakSeconds: Int
@@ -130,12 +133,38 @@ final class TimerViewModel {
         currentCycle > 0 ? "サイクル \(currentCycle) / \(totalCycles)" : nil
     }
 
-    /// タスク一覧に合わせて選択を整える。未選択、または選択中のタスクが消えていたら先頭を選ぶ。
+    /// 選べるタスク(子を持たないタスクだけ)。作成順に並べる。
+    func selectableTasks(from tasks: [StudyTask]) -> [StudyTask] {
+        tasks.filter { !$0.hasChildren }
+    }
+
+    /// 親の名前を付けた表示名(例: 数学 › 数学1A)。
+    func displayName(of task: StudyTask) -> String {
+        var titles = [task.title]
+        var current = task.parent
+        while let node = current {
+            titles.insert(node.title, at: 0)
+            current = node.parent
+        }
+        return titles.joined(separator: " › ")
+    }
+
+    /// 選べるタスクに合わせて選択を整える。
+    /// 一度も選択していない最初の1回だけ先頭を自動で選ぶ。選択中のタスクが候補から外れた
+    /// (子を追加された・削除された)ら選択を解除し、その後は先頭を選び直さず未選択のままにする。
     func updateSelection(with tasks: [StudyTask]) {
-        if let selectedTask, tasks.contains(where: { $0.id == selectedTask.id }) {
+        let candidates = selectableTasks(from: tasks)
+        if let selectedTask {
+            hasHadSelection = true
+            // 削除済みのモデルの属性には触れないよう、識別子で比較する
+            if !candidates.contains(where: { $0.persistentModelID == selectedTask.persistentModelID }) {
+                self.selectedTask = nil
+            }
             return
         }
-        selectedTask = tasks.first
+        guard !hasHadSelection, let first = candidates.first else { return }
+        hasHadSelection = true
+        selectedTask = first
     }
 
     // MARK: - 操作
@@ -274,6 +303,12 @@ final class TimerViewModel {
             debugLog("保存なし(学習 0秒)")
             return
         }
+        // 実行中にタスク(または親)が削除されていたら、記録は保存せずに終了する
+        guard taskExists(task) else {
+            debugLog("保存なし(タスクが削除済み)")
+            self.task = nil
+            return
+        }
         modelContext.insert(StudyRecord(studySeconds: seconds, task: task))
         do {
             try modelContext.save()
@@ -282,6 +317,13 @@ final class TimerViewModel {
             errorMessage = error.localizedDescription
             debugLog("保存失敗: \(error.localizedDescription)")
         }
+    }
+
+    /// タスクが ModelContext 上に存在するか。親の削除で cascade 削除された子も、ここで検出できる。
+    private func taskExists(_ task: StudyTask) -> Bool {
+        let id = task.persistentModelID
+        let descriptor = FetchDescriptor<StudyTask>(predicate: #Predicate { $0.persistentModelID == id })
+        return ((try? modelContext.fetchCount(descriptor)) ?? 0) > 0
     }
 
     private func debugLog(_ message: String) {
