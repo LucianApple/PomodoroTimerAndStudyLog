@@ -182,8 +182,8 @@ open PomodoroTimerAndStudyLog.xcodeproj
 **品質向上・開発環境の整備**
 
 - Swift Testingを用いたテストコードの実装
-- 静的解析ツールの導入
-- GitHub Actionsなどを利用したCI/CD環境の構築
+- Swift Lintによる静的解析ツールの導入
+- GitHub Actions、または、Xcode Cloudを利用したCI/CD環境の構築
 
 **収益化・リリース**
 
