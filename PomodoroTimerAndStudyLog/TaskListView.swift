@@ -16,7 +16,9 @@ struct TaskListView: View {
 }
 
 private struct TaskListContent: View {
-    @Query(sort: \StudyTask.createdAt) private var tasks: [StudyTask]
+    /// 第1階層のタスク。子は各タスクの children から再帰的にたどる。
+    @Query(filter: #Predicate<StudyTask> { $0.parent == nil }, sort: \StudyTask.createdAt)
+    private var tasks: [StudyTask]
     @State private var viewModel: TaskListViewModel
 
     init(modelContext: ModelContext) {
@@ -33,10 +35,7 @@ private struct TaskListContent: View {
                 } else {
                     List {
                         ForEach(tasks) { task in
-                            TaskRow(task: task) {
-                                viewModel.startRenaming(task)
-                            }
-                            .cardRowBackground()
+                            TaskTreeRow(task: task, viewModel: viewModel)
                         }
                         .onDelete { offsets in
                             // 削除は確認ダイアログを経由する
@@ -57,6 +56,9 @@ private struct TaskListContent: View {
             }
             .sheet(item: $viewModel.renamingTask) { _ in
                 TaskRenameSheet(viewModel: viewModel)
+            }
+            .sheet(isPresented: $viewModel.isChoosingDestination) {
+                DestinationSheet(roots: tasks, viewModel: viewModel)
             }
             .confirmationDialog(
                 "タスクを削除しますか?",
@@ -79,8 +81,30 @@ private struct TaskListContent: View {
         }
     }
 
+    /// 「追加先」のラベルと選択中の追加先を出す行。タップすると追加先の選択シートが開く。
+    private var destinationRow: some View {
+        Button {
+            viewModel.startChoosingDestination()
+        } label: {
+            HStack(spacing: 4) {
+                Text("追加先")
+                    .foregroundStyle(.primary)
+                Text(viewModel.selectedDestinationTitle)
+                Image(systemName: "chevron.up.chevron.down")
+                Spacer(minLength: 0)
+            }
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(.tint)
+    }
+
+    /// タスクを追加する入力欄と、追加先の選択行
     private var inputSection: some View {
         VStack(alignment: .leading, spacing: 8) {
+            destinationRow
+
             HStack {
                 TextField("タスク名", text: $viewModel.newTitle)
                     .textFieldStyle(.roundedBorder)
@@ -106,11 +130,46 @@ private struct TaskListContent: View {
     }
 }
 
-/// タスクの1行。編集モード中だけタップでタイトル変更を開始できる。
-private struct TaskRow: View {
+/// タスクの1行。子を持つタスクは DisclosureGroup で、子を同じ List の中で下に展開する(最大3階層)。
+private struct TaskTreeRow: View {
+    let task: StudyTask
+    let viewModel: TaskListViewModel
+
+    var body: some View {
+        Group {
+            if task.hasChildren {
+                DisclosureGroup(
+                    isExpanded: Binding(
+                        get: { viewModel.isExpanded(task) },
+                        set: { viewModel.setExpanded(task, $0) }
+                    )
+                ) {
+                    let children = viewModel.sortedChildren(of: task)
+                    ForEach(children) { child in
+                        TaskTreeRow(task: child, viewModel: viewModel)
+                    }
+                    .onDelete { offsets in
+                        // 削除は確認ダイアログを経由する
+                        if let index = offsets.first {
+                            viewModel.requestDeletion(of: children[index])
+                        }
+                    }
+                } label: {
+                    TaskRowContent(task: task, viewModel: viewModel)
+                }
+            } else {
+                TaskRowContent(task: task, viewModel: viewModel)
+            }
+        }
+        .cardRowBackground()
+    }
+}
+
+/// タスク名の行。編集モード中はタップでタイトル変更を開始できる。
+private struct TaskRowContent: View {
     @Environment(\.editMode) private var editMode
     let task: StudyTask
-    let onRename: () -> Void
+    let viewModel: TaskListViewModel
 
     private var isEditing: Bool {
         editMode?.wrappedValue.isEditing == true
@@ -118,16 +177,122 @@ private struct TaskRow: View {
 
     var body: some View {
         if isEditing {
-            Button(action: onRename) {
+            Button {
+                viewModel.startRenaming(task)
+            } label: {
                 Label(task.title, systemImage: "folder")
                     .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                     .contentShape(Rectangle())
             }
+            .buttonStyle(.borderless)
             .foregroundStyle(.primary)
         } else {
             Label(task.title, systemImage: "folder")
-                .frame(minHeight: 44)
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
         }
+    }
+}
+
+/// 追加先を選ぶシート。タスク一覧と同じ見た目の、展開できる一覧(第3階層のタスクは出さない)。
+private struct DestinationSheet: View {
+    let roots: [StudyTask]
+    let viewModel: TaskListViewModel
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Button {
+                    viewModel.selectDestination(nil)
+                } label: {
+                    DestinationLabel(title: "最上位", systemImage: nil, isSelected: viewModel.newTaskParent == nil)
+                }
+                .buttonStyle(.borderless)
+                .cardRowBackground()
+
+                ForEach(roots) { root in
+                    DestinationTreeRow(task: root, viewModel: viewModel)
+                }
+            }
+            .navigationTitle("追加先を選ぶ")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("キャンセル") { viewModel.cancelChoosingDestination() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("完了") { viewModel.finishChoosingDestination() }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+    }
+}
+
+/// 追加先の選択シートの1行。子(第2階層まで)を持つタスクは DisclosureGroup で展開する。
+/// 名前の部分のタップで追加先を選び、矢印のタップは展開の切り替えだけを行う。
+private struct DestinationTreeRow: View {
+    let task: StudyTask
+    let viewModel: TaskListViewModel
+
+    var body: some View {
+        let children = viewModel.destinationChildren(of: task)
+        Group {
+            if children.isEmpty {
+                nameButton
+            } else {
+                DisclosureGroup(
+                    isExpanded: Binding(
+                        get: { viewModel.isDestinationExpanded(task) },
+                        set: { viewModel.setDestinationExpanded(task, $0) }
+                    )
+                ) {
+                    ForEach(children) { child in
+                        DestinationTreeRow(task: child, viewModel: viewModel)
+                    }
+                } label: {
+                    nameButton
+                }
+            }
+        }
+        .cardRowBackground()
+    }
+
+    private var nameButton: some View {
+        Button {
+            viewModel.selectDestination(task)
+        } label: {
+            DestinationLabel(
+                title: task.title,
+                systemImage: "folder",
+                isSelected: viewModel.newTaskParent?.id == task.id
+            )
+        }
+        .buttonStyle(.borderless)
+    }
+}
+
+/// 追加先の選択シートの行の見た目。選択中の行にはチェックマークを付ける。
+private struct DestinationLabel: View {
+    let title: String
+    let systemImage: String?
+    let isSelected: Bool
+
+    var body: some View {
+        HStack {
+            if let systemImage {
+                Label(title, systemImage: systemImage)
+            } else {
+                Text(title)
+            }
+            Spacer(minLength: 0)
+            if isSelected {
+                Image(systemName: "checkmark")
+                    .foregroundStyle(.tint)
+            }
+        }
+        .foregroundStyle(.primary)
+        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+        .contentShape(Rectangle())
     }
 }
 
@@ -173,6 +338,19 @@ private struct TaskRenameSheet: View {
     )
     container.mainContext.insert(StudyTask(title: "数学1A", createdAt: .now))
     container.mainContext.insert(StudyTask(title: "英単語帳", createdAt: .now.addingTimeInterval(1)))
+    return TaskListView().modelContainer(container)
+}
+
+#Preview("3階層") {
+    let container = try! ModelContainer(
+        for: StudyTask.self, StudyRecord.self,
+        configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+    )
+    let math = StudyTask(title: "数学", createdAt: .now)
+    let math1A = StudyTask(title: "数学1A", createdAt: .now.addingTimeInterval(1), parent: math)
+    let vectors = StudyTask(title: "ベクトル", createdAt: .now.addingTimeInterval(2), parent: math1A)
+    let english = StudyTask(title: "英語", createdAt: .now.addingTimeInterval(3))
+    [math, math1A, vectors, english].forEach { container.mainContext.insert($0) }
     return TaskListView().modelContainer(container)
 }
 

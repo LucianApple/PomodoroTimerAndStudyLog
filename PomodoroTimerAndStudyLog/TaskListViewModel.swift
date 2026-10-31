@@ -51,8 +51,111 @@ final class TaskListViewModel {
     /// 削除の確認待ちのタスク(nil なら確認ダイアログは閉じている)
     var taskPendingDeletion: StudyTask?
 
+    /// 新規タスクの追加先(nil なら最上位 = 第1階層)
+    var newTaskParent: StudyTask?
+
+    /// 子を展開表示しているタスクの id
+    private(set) var expandedTaskIDs: Set<UUID> = []
+
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
+    }
+
+    /// 子タスクを作成日時の順に並べて返す。
+    func sortedChildren(of task: StudyTask) -> [StudyTask] {
+        task.children.sorted { $0.createdAt < $1.createdAt }
+    }
+
+    /// タスクの子を展開表示しているか。
+    func isExpanded(_ task: StudyTask) -> Bool {
+        expandedTaskIDs.contains(task.id)
+    }
+
+    /// タスクの子の展開・折りたたみを切り替える。
+    func setExpanded(_ task: StudyTask, _ expanded: Bool) {
+        if expanded {
+            expandedTaskIDs.insert(task.id)
+        } else {
+            expandedTaskIDs.remove(task.id)
+        }
+    }
+
+    /// 追加先の選択シートを表示中か
+    var isChoosingDestination = false
+
+    /// 追加先の選択シートで、子を展開表示しているタスクの id(タスク一覧の展開状態とは別に持つ)
+    private(set) var expandedDestinationIDs: Set<UUID> = []
+
+    /// シートを開く前の追加先(キャンセルで戻す。nil は最上位)
+    private var destinationBeforeChoosing: StudyTask?
+
+    /// 追加先の選択シートを開く。選択中の追加先が見えるように、その親を展開しておく。
+    func startChoosingDestination() {
+        destinationBeforeChoosing = newTaskParent
+        var current = newTaskParent?.parent
+        while let node = current {
+            expandedDestinationIDs.insert(node.id)
+            current = node.parent
+        }
+        isChoosingDestination = true
+    }
+
+    /// 追加先を選ぶ(nil は最上位)。シートは閉じない。
+    /// 子を持つタスクは展開する(すでに展開されていればそのまま)。
+    func selectDestination(_ parent: StudyTask?) {
+        newTaskParent = parent
+        if let parent, !destinationChildren(of: parent).isEmpty {
+            setDestinationExpanded(parent, true)
+        }
+    }
+
+    /// 選んだ追加先のままシートを閉じる。
+    func finishChoosingDestination() {
+        isChoosingDestination = false
+    }
+
+    /// シートを開く前の追加先に戻してシートを閉じる。
+    func cancelChoosingDestination() {
+        newTaskParent = destinationBeforeChoosing
+        isChoosingDestination = false
+    }
+
+    /// 追加先の選択シートで、タスクの子を展開表示しているか。
+    func isDestinationExpanded(_ task: StudyTask) -> Bool {
+        expandedDestinationIDs.contains(task.id)
+    }
+
+    /// 追加先の選択シートで、タスクの子の展開・折りたたみを切り替える。追加先は変えない。
+    func setDestinationExpanded(_ task: StudyTask, _ expanded: Bool) {
+        if expanded {
+            expandedDestinationIDs.insert(task.id)
+        } else {
+            expandedDestinationIDs.remove(task.id)
+        }
+    }
+
+    /// 追加先の選択シートに出す子タスク。第3階層のタスクは出さない。
+    func destinationChildren(of task: StudyTask) -> [StudyTask] {
+        sortedChildren(of: task).filter { canAddChild(to: $0) }
+    }
+
+    /// 選択中の追加先の短い表示。例: 最上位 / 英語 / 英語 › 英文法
+    var selectedDestinationTitle: String {
+        guard let parent = newTaskParent else {
+            return "最上位"
+        }
+        return pathTitle(of: parent)
+    }
+
+    /// 親の名前を付けた表示名(例: 数学 › 数学1A)。
+    func pathTitle(of task: StudyTask) -> String {
+        var titles = [task.title]
+        var current = task.parent
+        while let node = current {
+            titles.insert(node.title, at: 0)
+            current = node.parent
+        }
+        return titles.joined(separator: " › ")
     }
 
     /// タイトル変更を開始する。入力欄には現在のタイトルを入れる。
@@ -85,6 +188,15 @@ final class TaskListViewModel {
 
     /// 確認ダイアログで承認されたタスクを削除する。
     func confirmDeletion(of task: StudyTask) {
+        // 追加先に選んでいたタスク(またはその子孫)が消えるので、最上位に戻す
+        var current = newTaskParent
+        while let node = current {
+            if node.id == task.id {
+                newTaskParent = nil
+                break
+            }
+            current = node.parent
+        }
         do {
             try deleteTask(task)
         } catch {
@@ -93,12 +205,19 @@ final class TaskListViewModel {
         taskPendingDeletion = nil
     }
 
-    /// 入力欄の内容でタスクを追加する。成功したら入力欄を空にし、失敗したらエラーメッセージを設定する。
-    /// - Parameter parent: 追加先の親タスク(nil なら第1階層)
-    func addTask(parent: StudyTask? = nil) {
+    /// 入力欄の内容で、選んだ追加先(newTaskParent)にタスクを追加する。
+    /// 成功したら入力欄を空にして追加先を展開し、失敗したらエラーメッセージを設定する。
+    func addTask() {
         do {
+            let parent = newTaskParent
             try createTask(title: newTitle, parent: parent)
             newTitle = ""
+            // 追加したタスクが見えるように、追加先とその親をすべて展開する
+            var current = parent
+            while let node = current {
+                setExpanded(node, true)
+                current = node.parent
+            }
         } catch {
             errorMessage = error.localizedDescription
         }
