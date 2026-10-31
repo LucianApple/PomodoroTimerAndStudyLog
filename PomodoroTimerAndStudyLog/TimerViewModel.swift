@@ -56,6 +56,7 @@ final class TimerViewModel {
     private let modelContext: ModelContext
     private let studySeconds: Int
     private let breakSeconds: Int
+    private let soundPlayer: SoundPlayer
 
     /// 記録の保存先のタスク(開始時に選ばれたもの)
     private var task: StudyTask?
@@ -80,9 +81,11 @@ final class TimerViewModel {
     init(
         modelContext: ModelContext,
         studySeconds: Int = TimerConfig.studySeconds,
-        breakSeconds: Int = TimerConfig.breakSeconds
+        breakSeconds: Int = TimerConfig.breakSeconds,
+        soundPlayer: SoundPlayer = SystemSoundPlayer()
     ) {
         self.modelContext = modelContext
+        self.soundPlayer = soundPlayer
         self.studySeconds = studySeconds
         self.breakSeconds = breakSeconds
         self.remainingSeconds = studySeconds
@@ -185,11 +188,13 @@ final class TimerViewModel {
         errorMessage = nil
         beginPhase(.study, from: now, endingAt: now.addingTimeInterval(TimeInterval(studySeconds)))
         startTicking()
+        soundPlayer.playStartSound()
     }
 
     /// 一時停止する。残り時間を保存し、停止中は進めない。ここまでの学習時間は溜めるだけで、保存はしない。
+    /// 音は鳴らさない(区間の境目を過ぎていた場合も、ユーザー操作では鳴らさない)。
     func pause(now: Date = Date()) {
-        tick(now: now)
+        advance(now: now)
         guard state == .studying || state == .onBreak, let phase, let phaseEndDate else { return }
         accumulateStudy(until: now)
         pausedRemaining = max(0, phaseEndDate.timeIntervalSince(now))
@@ -210,7 +215,7 @@ final class TimerViewModel {
 
     /// 手動で終了し、溜めた学習時間を記録する。終了済み・待機中は何もしない(二重保存の防止)。
     func stop(now: Date = Date()) {
-        tick(now: now)
+        advance(now: now)
         guard state != .idle, state != .finished else { return }
         finish(at: now)
     }
@@ -238,28 +243,49 @@ final class TimerViewModel {
 
     /// 現在時刻に合わせて残り秒と状態を更新する。
     /// tick が遅れても、終了予定時刻との差で計算するので時間はずれない。
+    /// 複数の区間が一度に進んだ場合も、鳴らす音は最後の1回だけ。
     func tick(now: Date = Date()) {
+        switch advance(now: now) {
+        case .start: soundPlayer.playStartSound()
+        case .end: soundPlayer.playEndSound()
+        case nil: break
+        }
+    }
+
+    // MARK: - 内部処理
+
+    /// 区間の切り替えで鳴らす音の種類
+    private enum SoundEvent {
+        case start
+        case end
+    }
+
+    /// 現在時刻まで状態を進める。音は鳴らさず、最後に起きた切り替えの音の種類だけを返す。
+    @discardableResult
+    private func advance(now: Date) -> SoundEvent? {
+        var event: SoundEvent?
         // tick が大きく遅れた場合に備え、過ぎた区間を順に進める
         while let phase, let end = phaseEndDate, now >= end {
             switch phase {
             case .study:
                 if currentCycle >= totalCycles {
                     finish(at: end)
-                    return
+                    return .end
                 }
                 accumulateStudy(until: end)
                 beginPhase(.rest, from: end, endingAt: end.addingTimeInterval(TimeInterval(breakSeconds)))
+                event = .end
             case .rest:
                 currentCycle += 1
                 beginPhase(.study, from: end, endingAt: end.addingTimeInterval(TimeInterval(studySeconds)))
+                event = .start
             }
         }
         if let end = phaseEndDate {
             remainingSeconds = max(0, Int(ceil(end.timeIntervalSince(now))))
         }
+        return event
     }
-
-    // MARK: - 内部処理
 
     private func beginPhase(_ newPhase: TimerPhase, from start: Date, endingAt end: Date) {
         phase = newPhase
@@ -383,7 +409,7 @@ private struct TimerViewModelPreview: View {
             let task = StudyTask(title: "数学1A")
             modelContext.insert(task)
             self.task = task
-            viewModel = TimerViewModel(modelContext: modelContext)
+            viewModel = TimerViewModel(modelContext: modelContext, soundPlayer: SilentSoundPlayer())
         }
     }
 }

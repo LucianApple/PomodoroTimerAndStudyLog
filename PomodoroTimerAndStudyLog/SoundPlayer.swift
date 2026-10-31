@@ -12,8 +12,8 @@ protocol SoundPlayer {
 enum SoundConfig {
     /// 開始音: Tink(短く高い音)
     static let startSoundID: SystemSoundID = 1057
-    /// 終了音: Fanfare(長めの華やかな音)
-    static let endSoundID: SystemSoundID = 1025
+    /// 終了音: jbl_begin
+    static let endSoundID: SystemSoundID = 1111
 }
 
 /// iOS のシステムサウンドで鳴らす実装。音声ファイルは使わない。
