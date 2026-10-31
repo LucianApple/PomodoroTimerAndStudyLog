@@ -60,7 +60,7 @@ private struct TaskListContent: View {
             .sheet(isPresented: $viewModel.isChoosingDestination) {
                 DestinationSheet(roots: tasks, viewModel: viewModel)
             }
-            .confirmationDialog(
+            .alert(
                 "タスクを削除しますか?",
                 isPresented: Binding(
                     get: { viewModel.taskPendingDeletion != nil },
@@ -68,7 +68,6 @@ private struct TaskListContent: View {
                         if !isPresented { viewModel.taskPendingDeletion = nil }
                     }
                 ),
-                titleVisibility: .visible,
                 presenting: viewModel.taskPendingDeletion
             ) { task in
                 Button("削除", role: .destructive) {
@@ -76,28 +75,32 @@ private struct TaskListContent: View {
                 }
                 Button("キャンセル", role: .cancel) {}
             } message: { task in
-                Text("「\(task.title)」を削除すると、このタスクの学習記録も一緒に消えます。")
+                Text(viewModel.deletionMessage(for: task))
             }
         }
     }
 
     /// 「追加先」のラベルと選択中の追加先を出す行。タップすると追加先の選択シートが開く。
     private var destinationRow: some View {
-        Button {
-            viewModel.startChoosingDestination()
-        } label: {
-            HStack(spacing: 4) {
-                Text("追加先")
-                    .foregroundStyle(.primary)
-                Text(viewModel.selectedDestinationTitle)
-                Image(systemName: "chevron.up.chevron.down")
-                Spacer(minLength: 0)
+        // ボタンの範囲は見えている文字の幅だけにし、右側の空白は Spacer としてボタンの外に置く
+        HStack {
+            Button {
+                viewModel.startChoosingDestination()
+            } label: {
+                HStack(spacing: 4) {
+                    Text("追加先")
+                        .foregroundStyle(.primary)
+                    Text(viewModel.selectedDestinationTitle)
+                    Image(systemName: "chevron.up.chevron.down")
+                }
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
             }
-            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
+            .foregroundStyle(.tint)
+
+            Spacer(minLength: 0)
         }
-        .buttonStyle(.plain)
-        .foregroundStyle(.tint)
     }
 
     /// タスクを追加する入力欄と、追加先の選択行

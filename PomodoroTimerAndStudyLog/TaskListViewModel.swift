@@ -186,6 +186,14 @@ final class TaskListViewModel {
         taskPendingDeletion = task
     }
 
+    /// 削除の確認ダイアログのメッセージ。子を持つタスクは、子と記録もすべて消えることを明記する。
+    func deletionMessage(for task: StudyTask) -> String {
+        if task.hasChildren {
+            return "「\(task.title)」を削除すると、子タスクもすべて消え、このタスクと子タスクの学習記録も一緒に消えます。"
+        }
+        return "「\(task.title)」を削除すると、このタスクの学習記録も一緒に消えます。"
+    }
+
     /// 確認ダイアログで承認されたタスクを削除する。
     func confirmDeletion(of task: StudyTask) {
         // 追加先に選んでいたタスク(またはその子孫)が消えるので、最上位に戻す
