@@ -46,7 +46,7 @@
 - 対応OS: iOS 17以上
 - 設計: MVVM(`@Observable`)
 - データ保存: SwiftData(ローカルのみ)
-- 音: AudioToolbox(システムサウンド)
+- 音声: AudioToolbox(システムサウンド)
 - 開発環境: Xcode 27、Git / GitHub
 - 開発支援: Claude(Xcode のエージェント機能)
 - 外部ライブラリ: 使用していません
