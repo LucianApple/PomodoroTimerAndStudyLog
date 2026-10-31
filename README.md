@@ -98,13 +98,13 @@ View(SwiftUI)  ──  ViewModel(@Observable)  ──  Model(SwiftData)
 
 ## 動作確認の方法
 
-# GitHubからリポジトリをクローン
+GitHubからリポジトリをクローン
 git clone https://github.com/LucianApple/PomodoroTimerAndStudyLog.git
 
-# プロジェクトディレクトリに移動
+プロジェクトディレクトリに移動
 cd PomodoroTimerAndStudyLog
 
-# Xcodeでプロジェクトを開く
+Xcodeでプロジェクトを開く
 open PomodoroTimerAndStudyLog.xcodeproj
 
 1. iPhone シミュレータを選んで、実行します(⌘R)。
