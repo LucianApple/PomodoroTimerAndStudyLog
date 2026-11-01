@@ -141,7 +141,7 @@ open PomodoroTimerAndStudyLog.xcodeproj
 - 学習記録の合計(二重計上がないこと)
 - タイマー実行中にタスクを削除した場合の動作
 - ダークモード、最大の Dynamic Type<br>
-<br>
+
 など
 
 ## 制限事項
