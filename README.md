@@ -55,7 +55,7 @@
 - データ保存: SwiftData(ローカルのみ)
 - 音声: AudioToolbox(システムサウンド)
 - 開発環境: Xcode 27、Git / GitHub
-- 開発支援: Claude Code(Xcode上で利用)
+- 開発支援: Claude Code(Xcode上で利用)、ChatGPT
 - 外部ライブラリ: 使用していません
 
 ## 開発について
