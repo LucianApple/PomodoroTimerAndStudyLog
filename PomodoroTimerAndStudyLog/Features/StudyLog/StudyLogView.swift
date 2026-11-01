@@ -78,7 +78,7 @@ private struct TaskSummaryRow: View {
         configurations: ModelConfiguration(isStoredInMemoryOnly: true)
     )
     let context = container.mainContext
-    // 数学(第1) › 数学1A(第2、過去の記録 300秒) › ベクトル(第3、600秒)、英語(第1、120秒)
+    // 数学(第1) › 数学1A(第2、過去の記録 300秒) › 三角比(第3、600秒)、英語(第1、120秒)
     let math = StudyTask(title: "数学", createdAt: .now)
     let math1A = StudyTask(title: "数学1A", createdAt: .now.addingTimeInterval(1), parent: math)
     let vectors = StudyTask(title: "三角比", createdAt: .now.addingTimeInterval(2), parent: math1A)
@@ -87,7 +87,7 @@ private struct TaskSummaryRow: View {
     context.insert(StudyRecord(studySeconds: 600, task: vectors))
     context.insert(StudyRecord(studySeconds: 300, task: math1A))
     context.insert(StudyRecord(studySeconds: 120, task: english))
-    // 期待値: 全体 1020秒(17分) / 数学 900 / 数学1A 900 / ベクトル 600 / 英語 120
+    // 期待値: 全体 1020秒(17分) / 数学 900 / 数学1A 900 / 三角比 600 / 英語 120
     return StudyLogView().modelContainer(container)
 }
 

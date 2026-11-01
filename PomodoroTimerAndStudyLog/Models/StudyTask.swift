@@ -80,7 +80,7 @@ private struct StudyTaskHierarchyPreview: View {
 
     let math = StudyTask(title: "数学")
     let math1A = StudyTask(title: "数学1A", parent: math)
-    let vectors = StudyTask(title: "ベクトル", parent: math1A)
+    let vectors = StudyTask(title: "三角比", parent: math1A)
     let english = StudyTask(title: "英語")
     [math, math1A, vectors, english].forEach { context.insert($0) }
 
@@ -88,7 +88,7 @@ private struct StudyTaskHierarchyPreview: View {
     context.insert(StudyRecord(studySeconds: 600, task: vectors))
     context.insert(StudyRecord(studySeconds: 300, task: math1A))
     context.insert(StudyRecord(studySeconds: 120, task: english))
-    // 期待値: 数学 900 / 数学1A 900 / ベクトル 600 / 英語 120
+    // 期待値: 数学 900 / 数学1A 900 / 三角比 600 / 英語 120
 
     return StudyTaskHierarchyPreview(tasks: [math, math1A, vectors, english])
         .modelContainer(container)

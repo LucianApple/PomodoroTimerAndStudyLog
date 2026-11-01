@@ -351,7 +351,7 @@ private struct TaskRenameSheet: View {
     )
     let math = StudyTask(title: "数学", createdAt: .now)
     let math1A = StudyTask(title: "数学1A", createdAt: .now.addingTimeInterval(1), parent: math)
-    let vectors = StudyTask(title: "ベクトル", createdAt: .now.addingTimeInterval(2), parent: math1A)
+    let vectors = StudyTask(title: "三角比", createdAt: .now.addingTimeInterval(2), parent: math1A)
     let english = StudyTask(title: "英語", createdAt: .now.addingTimeInterval(3))
     [math, math1A, vectors, english].forEach { container.mainContext.insert($0) }
     return TaskListView().modelContainer(container)
