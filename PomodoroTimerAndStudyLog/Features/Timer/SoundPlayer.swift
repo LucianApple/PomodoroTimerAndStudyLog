@@ -17,7 +17,7 @@ enum SoundConfig {
 }
 
 /// iOS のシステムサウンドで鳴らす実装。音声ファイルは使わない。
-struct SystemSoundPlayer: SoundPlayer {
+nonisolated struct SystemSoundPlayer: SoundPlayer {
     func playStartSound() {
         AudioServicesPlaySystemSound(SoundConfig.startSoundID)
     }
@@ -28,7 +28,7 @@ struct SystemSoundPlayer: SoundPlayer {
 }
 
 /// 何も鳴らさない実装。Preview やテストで使う。
-struct SilentSoundPlayer: SoundPlayer {
+nonisolated struct SilentSoundPlayer: SoundPlayer {
     func playStartSound() {}
     func playEndSound() {}
 }
