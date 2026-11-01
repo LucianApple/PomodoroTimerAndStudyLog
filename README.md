@@ -1,4 +1,4 @@
-# PomodoroTimerAndStudyLog
+# PomodoroTimerAndStudyLog（基本機能実装済み段階）
 
 ポモドーロタイマーと学習記録を1つにまとめた、iOS の学習管理アプリです。
 タイマーを回すだけで、「どのタスクに、何分勉強したか」が、自動で記録されます。
