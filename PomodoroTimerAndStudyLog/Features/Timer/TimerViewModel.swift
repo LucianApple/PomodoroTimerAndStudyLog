@@ -18,7 +18,7 @@ enum TimerPhase: Equatable {
     case rest
 }
 
-/// 学習→休憩→学習…を全自動で進めるポモドーロタイマーの状態遷移を管理する。
+/// 学習→休憩→学習…を自動で進めるポモドーロタイマーの状態遷移を管理する。
 /// 最終サイクルは学習が終わった時点で即終了する(最後の休憩はなし)。
 /// 学習中の経過時間だけを溜め、終了時に選択タスクへ StudyRecord を1件にまとめて保存する。
 @MainActor
@@ -371,7 +371,7 @@ final class TimerViewModel {
     }
 }
 
-// MARK: - Preview(4-2 の動作確認用の仮表示。画面本体は 4-3 以降で実装する)
+// MARK: - Preview(動作確認用)
 
 private struct TimerViewModelPreview: View {
     @Environment(\.modelContext) private var modelContext

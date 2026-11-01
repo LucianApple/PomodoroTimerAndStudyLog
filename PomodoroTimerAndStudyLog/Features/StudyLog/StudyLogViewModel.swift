@@ -69,7 +69,7 @@ final class StudyLogViewModel {
     }
 }
 
-// MARK: - Preview(5-1 の動作確認用の仮表示。画面本体は 5-2 で実装する)
+// MARK: - Preview(動作確認用)
 
 private struct StudyLogViewModelPreview: View {
     let viewModel: StudyLogViewModel

@@ -1,8 +1,8 @@
 import Foundation
 import SwiftData
 
-/// 勉強タスク。削除すると紐づく学習記録も一緒に消える(cascade)。
-/// タイトルの重複チェックは ViewModel で行うため @Attribute(.unique) は使わない。
+/// 学習タスク。削除すると紐づく学習記録も一緒に消える(cascade)。
+/// タイトルの重複チェックは ViewModel で行う。
 @Model
 final class StudyTask {
     var id: UUID

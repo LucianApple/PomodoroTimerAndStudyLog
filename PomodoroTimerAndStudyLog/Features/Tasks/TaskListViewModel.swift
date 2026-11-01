@@ -285,7 +285,7 @@ final class TaskListViewModel {
     }
 }
 
-// MARK: - Preview(3-1 の動作確認用の仮表示。画面本体は 3-2 以降で実装する)
+// MARK: - Preview(動作確認用)
 
 private struct TaskListViewModelPreview: View {
     @Environment(\.modelContext) private var modelContext
@@ -329,7 +329,7 @@ private struct TaskListViewModelPreview: View {
             attempt("編集 英単語帳 → 英熟語") { try viewModel.updateTitle(of: english, to: "英熟語") }
             attempt("削除 英熟語") { try viewModel.deleteTask(english) }
 
-            // 8-1: 階層対応の確認
+            // 階層対応の確認
             var algebra: StudyTask?
             attempt("第2階層「代数」を数学1A の下に作成") {
                 algebra = try viewModel.createTask(title: "代数", parent: math)
