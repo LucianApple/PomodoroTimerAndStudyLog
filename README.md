@@ -179,7 +179,7 @@ open PomodoroTimerAndStudyLog.xcodeproj
 
 1. iPhone シミュレータを選んで、実行します(⌘R)。
 2. Xcode から、そのまま実行した場合(Debug ビルド)は、動作確認用に学習10秒・休憩5秒で動きます。
-3. 本番の学習25分・休憩5分で試すには、画面上部のProduct → Scheme → Edit Scheme → Run → Build Configuration を **Release** に変えて、実行してください。
+3. 本番の学習25分・休憩5分で試すには、メニューバーのProduct → Scheme → Edit Scheme → Run → Build Configuration を **Release** に変えて、実行してください。
 4. 音が鳴らない場合は、Mac の音量と、シミュレータ・端末のサイレント設定を確認してください。
 
 ## テスト
@@ -251,7 +251,7 @@ open PomodoroTimerAndStudyLog.xcodeproj
 **品質向上・開発環境の整備**
 
 - Swift Testingを用いたテストコードの実装
-- Swift Lintによる静的解析ツールの導入
+- SwiftLintによる静的解析ツールの導入
 - GitHub Actions、または、Xcode Cloudを利用したCI/CD環境の構築
 
 **収益化・リリース**
