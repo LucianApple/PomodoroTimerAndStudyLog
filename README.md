@@ -7,7 +7,7 @@
 
 | タイマー | タスク | 学習記録 |
 |---|---|---|
-| ![タイマー](timer.png) | ![タスク](task.png) | ![学習記録](log.png) |
+| ![タイマー](docs/images/timer.png) | ![タスク](docs/images/task.png) | ![学習記録](docs/images/log.png) |
 
 ## 画面構成
 
