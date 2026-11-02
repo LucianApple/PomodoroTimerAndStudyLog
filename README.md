@@ -273,13 +273,8 @@ open PomodoroTimerAndStudyLog.xcodeproj
 
 ## 参考教材
 
-- **Udemy** Master iOS Swift App Development In 2025: UIKit & SwiftUI、Claude AI & Claude Code: Build & Ship Your First iOS App
-- **紙書籍** iPhoneアプリ集中開発講座
-- **Zenn Book** iOS開発の教科書（課金済み）https://zenn.dev/st43/books/bb5ea67aa3de15/viewer/e758bd
-- **学習用アプリ** CodeCandyTutor
-- **学習用ブログ** https://blog.code-candy.com/category/iosskils/
-
-
-
-
+- **Udemy**：Master iOS Swift App Development In 2025: UIKit & SwiftUI、Claude AI & Claude Code: Build & Ship Your First iOS App、The Git & Github Bootcamp
+- **紙書籍**：iPhoneアプリ集中開発講座
+- **Zenn Book**：iOS開発の教科書（課金済み）
+- **学習アプリ**：CodeCandyTutor（ベーシックプラン課金済み）
 
