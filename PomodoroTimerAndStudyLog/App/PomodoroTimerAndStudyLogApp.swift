@@ -2,7 +2,7 @@
 //  PomodoroTimerAndStudyLogApp.swift
 //  PomodoroTimerAndStudyLog
 //
-//  Created by 柳澤　光也 on 2026/10/16.
+//  Created by LucianApple on 2026/10/16.
 //
 
 import SwiftUI
