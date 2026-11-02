@@ -139,10 +139,10 @@ final class TaskListViewModel {
         sortedChildren(of: task).filter { canAddChild(to: $0) }
     }
 
-    /// 選択中の追加先の短い表示。例: 最上位 / 英語 / 英語 › 英文法
+    /// 選択中の追加先の短い表示。例: 最上位階層 / 英語 / 英語 › 英文法
     var selectedDestinationTitle: String {
         guard let parent = newTaskParent else {
-            return "最上位"
+            return "最上位階層"
         }
         return pathTitle(of: parent)
     }

@@ -207,7 +207,7 @@ private struct DestinationSheet: View {
                 Button {
                     viewModel.selectDestination(nil)
                 } label: {
-                    DestinationLabel(title: "最上位", systemImage: nil, isSelected: viewModel.newTaskParent == nil)
+                    DestinationLabel(title: "最上位階層", systemImage: nil, isSelected: viewModel.newTaskParent == nil)
                 }
                 .buttonStyle(.borderless)
                 .cardRowBackground()
