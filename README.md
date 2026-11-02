@@ -271,6 +271,14 @@ open PomodoroTimerAndStudyLog.xcodeproj
 - **開発手法**：テスト駆動開発（TDD）や仕様駆動開発などを習得し、開発に取り入れる。
 - **アプリマーケティング**：ユーザー獲得や継続利用につながる施策を学び、効果的な収益化につなげる。
 
+## 参考教材
+
+- **Udemy** Master iOS Swift App Development In 2025: UIKit & SwiftUI、Claude AI & Claude Code: Build & Ship Your First iOS App
+- **紙書籍** iPhoneアプリ集中開発講座
+- **Zenn Book（課金）** iOS開発の教科書
+- **学習用アプリ** CodeCandyTutor
+- **学習用ブログ** https://blog.code-candy.com/category/iosskils/
+
 
 
 
